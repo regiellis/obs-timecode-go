@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -18,19 +21,13 @@ jobs:
           go-version: '1.22'
 
       - name: Build Windows executable
-        run: |
-          go build -o obs-timecode-server.exe .
+        run: go build -o obs-timecode-server.exe .
 
-      - name: Upload Release Asset
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: obs-timecode-server.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Asset (Python script)
-        uses: softprops/action-gh-release@v2
-        with:
-          files: obs-timecode-generator.py
+          files: |
+            obs-timecode-server.exe
+            obs-timecode-generator.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

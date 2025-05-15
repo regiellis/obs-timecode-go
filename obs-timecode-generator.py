@@ -178,3 +178,42 @@ def tcg_update_text_source(text_to_display: str) -> None:
         print(
             f"PYTHON: ERROR - Text source '{tcg_config['source_name']}' not found. Please create it."
         )
+
+
+def tcg_is_source_visible():
+    source = obs.obs_get_source_by_name(tcg_config["source_name"])
+    visible = False
+    if source:
+        scenes = obs.obs_frontend_get_scenes()
+        for scene in scenes:
+            scene_item = obs.obs_scene_find_source(obs.obs_scene_from_source(scene), tcg_config["source_name"])
+            if scene_item and obs.obs_sceneitem_visible(scene_item):
+                visible = True
+            if scene_item:
+                obs.obs_sceneitem_release(scene_item)
+        obs.source_list_release(scenes)
+        obs.obs_source_release(source)
+    return visible
+
+
+def tcg_poll_timecode():
+    if not tcg_is_source_visible():
+        tcg_config["current_error_message"] = "TIMECODE SOURCE MISSING OR HIDDEN?"
+        tcg_update_text_source("")
+        # Stop polling until source is visible again
+        obs.timer_remove(tcg_poll_timecode)
+        # Start a lightweight timer to check for source reappearance
+        obs.timer_add(tcg_check_source_reappeared, 1000)
+        return
+    # ...existing polling logic (fetch timecode, update text)...
+
+
+def tcg_check_source_reappeared():
+    if tcg_is_source_visible():
+        tcg_config["current_error_message"] = None
+        obs.timer_remove(tcg_check_source_reappeared)
+        obs.timer_add(tcg_poll_timecode, 1000)
+        tcg_poll_timecode()
+
+# In your script_load or timer setup, replace timer_add for polling with tcg_poll_timecode
+# ...existing code...

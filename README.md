@@ -16,6 +16,10 @@
 > [!NOTE]
 > I built this tool to get better, frame-accurate timecode overlays for videos that will be used with Metahuman Animator and other workflow tools I plan to build for advanced video and animation pipelines in Unreal Engine.
 
+
+> [!IMPORTANT]
+> This plugin was inspired by the fantastic [RTC Timecode OBS RTC Timecode](https://github.com/spessoni/obs-timecode-text) for text source built
+> by [Scott Pessoni](https://github.com/spessoni)
 ---
 
 ## ✨ Why another OBS Timecode Generator?
@@ -57,6 +61,40 @@
 *   Error/status messages in the text source
 *   All settings configurable in OBS
 
+## ⏱️ How It Works & Why RTC/Go?
+
+This tool generates timecode (HH:MM:SS:FF) for a text source in OBS based on your computer's Real-Time Clock (RTC). Why does this matter?
+
+- **Precision:** By leveraging Go's time package, which uses monotonic clocks under the hood, the server delivers highly accurate, drift-resistant timecode. This is a big step up from traditional Lua or Python scripts that rely on less precise timing.
+- **Frame-Accurate:** The Go backend calculates frames using elapsed nanoseconds, not just function call frequency, so your timecode stays in sync even if polling is irregular.
+- **SMPTE-Style:** The timecode is perfect for slates, live video, latency checks, and workflows like Unreal Engine's Metahuman Animator, where frame-accurate overlays are essential.
+- **RTC Tips:**
+  - Synchronize your computer's clock with an internet time server for best results.
+  - A monospaced font is recommended to prevent the timecode from "jumping" as it updates.
+  - Showing frames (FF) increases CPU usage, as the text source must update every frame—use only if needed.
+
+## ⚙️ Settings Overview
+
+- **Text Source:** The OBS source to which the timecode is applied.
+- **Mode:** 24 Hour, 12 Hour, or 12 Hour + AM/PM.
+- **Show Frames:** Adds :FF to the timecode. More CPU usage, but essential for frame-accurate workflows.
+- **Show Date:** Prepends YYYY-MM-DD.
+- **Show UTC(GMT):** Displays time in Coordinated Universal Time.
+- **Prefix/Suffix Text:** Add custom text before or after the timecode.
+- **Update when not in program:** ("Keep Updated") Updates timecode even when the source isn't visible in Program. Useful for logging, multiview, or NDI feeds, but increases CPU load.
+
+## 🧑‍🔬 Technical Background
+
+SMPTE timecode is a standard for labeling video frames, used in TV and film for sync and logging. This tool uses your computer's RTC for non-drop frame (NDF) timecode. Drop-frame is not implemented (yet), but the Go backend makes it possible to extend in the future.
+
+Older scripts (like Lua) only had access to second-level precision and incremented frames by counting calls. This Go version uses monotonic time for true elapsed nanosecond accuracy, so your timecode is as close to real-world as your hardware allows.
+
+## 💡 Tips & Best Practices
+
+- Keep your system clock synced for best accuracy.
+- Only enable "Show Frames" or "Keep Updated" if you need them—these options increase CPU usage.
+- Use a fixed-width font for the text source.
+- If the timecode doesn't update, check that the source is visible or enable "Keep Updated".
 
 ## 🧑‍💻 Building from Source
 
@@ -99,3 +137,4 @@ Pull requests, issues, and feedback are welcome—especially for cross-platform 
 <p align="center">
   Made with ❤️, and golang <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/go/go-original.svg" alt="Go" width="18" height="18"/>, and some Python <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="Python" width="18" height="18"/>
 </p>
+````

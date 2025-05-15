@@ -89,6 +89,38 @@ SMPTE timecode is a standard for labeling video frames, used in TV and film for 
 
 Older scripts (like Lua) only had access to second-level precision and incremented frames by counting calls. This Go version uses monotonic time for true elapsed nanosecond accuracy, so your timecode is as close to real-world as your hardware allows.
 
+## 🕒 Jamming External Timecode
+
+You can now "jam" (synchronize) the server to an external timecode using the `/jam` endpoint. This is useful for aligning the server's timecode with an external source (e.g., LTC, MIDI, or another system).
+
+### How to Jam the Server
+
+Send a POST request to `http://localhost:8080/jam` with a JSON body. Supported formats:
+
+- **SMPTE timecode string:**
+  ```json
+  {
+    "timecode": "12:34:56:12",
+    "fps": 30
+  }
+  ```
+- **ISO datetime:**
+  ```json
+  {
+    "datetime": "2025-05-15T12:34:56.400Z"
+  }
+  ```
+- **Unix timestamp (milliseconds):**
+  ```json
+  {
+    "timestamp": 1747312496400
+  }
+  ```
+
+After jamming, all `/timecode` responses will reflect the new reference time.
+
+---
+
 ## 💡 Tips & Best Practices
 
 - Keep your system clock synced for best accuracy.
@@ -137,4 +169,3 @@ Pull requests, issues, and feedback are welcome—especially for cross-platform 
 <p align="center">
   Made with ❤️, and golang <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/go/go-original.svg" alt="Go" width="18" height="18"/>, and some Python <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="Python" width="18" height="18"/>
 </p>
-````

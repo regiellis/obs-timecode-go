@@ -15,6 +15,7 @@ type TimecodeService struct {
 	currentFrame      int
 	lastNanosecondDiv int64 // Used for more precise frame reset with monotonic time
 	timeProvider      TimeProvider
+	jamOffset         time.Duration // Offset for jammed time
 }
 
 func NewTimecodeService(defaultFPS int) *TimecodeService {
@@ -52,11 +53,22 @@ func (ts *TimecodeService) UpdateConfig(newConfig ClientConfig) {
 	fmt.Printf("Server config updated: %+v\n", ts.config)
 }
 
+// JamToTime sets the server's internal time offset so that GetFormattedTimecode returns the jammed time
+func (ts *TimecodeService) JamToTime(jamTime time.Time) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	ts.jamOffset = jamTime.Sub(ts.timeProvider())
+	fmt.Printf("[INFO] Timecode jammed to: %s\n", jamTime.Format(time.RFC3339Nano))
+}
+
 func (ts *TimecodeService) GetFormattedTimecode() string {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 
 	now := ts.timeProvider()
+	if ts.jamOffset != 0 {
+		now = now.Add(ts.jamOffset)
+	}
 	if ts.config.ShowUTC {
 		now = now.UTC()
 	}

@@ -74,6 +74,7 @@ func TimeCodeServer(cmd *cobra.Command, args []string) {
 
 	http.HandleFunc("/timecode", server.HandleTimecodeRequestWithLog(timeService, debug))
 	http.HandleFunc("/config", server.HandleConfigRequestWithLog(timeService, debug))
+	http.HandleFunc("/jam", server.HandleJamRequest(timeService, debug))
 
 	log.Printf("Listening on port %d...\n", port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {

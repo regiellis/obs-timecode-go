@@ -120,3 +120,71 @@ func HandleTimecodeRequestWithLog(ts *TimecodeService, debug bool) http.HandlerF
 		HandleTimecodeRequest(ts)(w, r)
 	}
 }
+
+// handles requests to jam (set) the server's timecode
+func HandleJamRequest(ts *TimecodeService, debug bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var req struct {
+			Timecode  string `json:"timecode"`
+			FPS       int    `json:"fps"`
+			Datetime  string `json:"datetime"`
+			Timestamp int64  `json:"timestamp"`
+		}
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(&req); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to decode jam request: %v", err), http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		if debug {
+			fmt.Printf("[DEBUG] /jam endpoint hit: %+v\n", req)
+		}
+
+		var jamTime time.Time
+		var err error
+		if req.Timecode != "" {
+			// Parse SMPTE timecode string (HH:MM:SS:FF)
+			jamTime, err = ParseSMPTETimecode(req.Timecode, req.FPS)
+			if err != nil {
+				http.Error(w, "Invalid SMPTE timecode: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+		} else if req.Datetime != "" {
+			jamTime, err = time.Parse(time.RFC3339, req.Datetime)
+			if err != nil {
+				http.Error(w, "Invalid datetime: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+		} else if req.Timestamp != 0 {
+			jamTime = time.Unix(0, req.Timestamp*int64(time.Millisecond))
+		} else {
+			http.Error(w, "No valid timecode, datetime, or timestamp provided", http.StatusBadRequest)
+			return
+		}
+
+		ts.JamToTime(jamTime)
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, "Timecode jammed successfully")
+	}
+}
+
+// ParseSMPTETimecode parses a SMPTE timecode string (HH:MM:SS:FF) to time.Time (today's date)
+func ParseSMPTETimecode(tc string, fps int) (time.Time, error) {
+	var h, m, s, f int
+	sep := ":"
+	if len(tc) == 11 && tc[8] == ';' {
+		sep = ";"
+	}
+	_, err := fmt.Sscanf(tc, "%02d:%02d:%02d"+sep+"%02d", &h, &m, &s, &f)
+	if err != nil {
+		return time.Time{}, err
+	}
+	now := time.Now()
+	jam := time.Date(now.Year(), now.Month(), now.Day(), h, m, s, int(float64(f)/float64(fps)*1e9), now.Location())
+	return jam, nil
+}

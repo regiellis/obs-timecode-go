@@ -23,11 +23,12 @@ jobs:
       - name: Build Windows executable
         run: go build -o obs-timecode-server.exe .
 
+      - name: Create release package
+        run: Compress-Archive -Path obs-timecode-server.exe, obs-timecode-generator.py -DestinationPath obs-timecode-package.zip
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            obs-timecode-server.exe
-            obs-timecode-generator.py
+          files: obs-timecode-package.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
